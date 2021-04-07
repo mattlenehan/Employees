@@ -1,6 +1,9 @@
 package com.example.employees.model
 
+import android.text.TextUtils
+import android.util.Patterns
 import androidx.annotation.NonNull
+import androidx.core.text.isDigitsOnly
 import com.example.employees.constants.Constants.BIOGRAPHY
 import com.example.employees.constants.Constants.EMAIL_ADDRESS
 import com.example.employees.constants.Constants.EMPLOYEE_TYPE
@@ -11,6 +14,7 @@ import com.example.employees.constants.Constants.PHOTO_URL_SMALL
 import com.example.employees.constants.Constants.TEAM
 import com.example.employees.constants.Constants.UUID
 import com.google.gson.annotations.SerializedName
+
 
 data class Employee(
     @NonNull
@@ -38,5 +42,30 @@ data class Employee(
 )
 
 fun Employee.isValid(): Boolean {
-    return id != null && fullName != null && emailAddress != null && team != null && employeeType != null
+    return id != null && fullName != null && hasValidEmail() && team != null && hasValidEmployeeType()
+}
+
+fun Employee.hasValidOrEmptyPhoneNumber(): Boolean {
+    return if (TextUtils.isEmpty(phoneNumber)) {
+        true
+    } else {
+        Patterns.PHONE.matcher(phoneNumber).matches()
+    }
+}
+
+fun Employee.hasValidEmail(): Boolean {
+    return if (TextUtils.isEmpty(emailAddress)) {
+        false
+    } else {
+        Patterns.EMAIL_ADDRESS.matcher(emailAddress).matches()
+    }
+}
+
+fun Employee.hasValidEmployeeType(): Boolean {
+    return when (employeeType) {
+        EmployeeType.FULL_TIME,
+        EmployeeType.PART_TIME,
+        EmployeeType.CONTRACTOR -> true
+        else -> false
+    }
 }
