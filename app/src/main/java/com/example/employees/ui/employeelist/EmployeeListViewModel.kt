@@ -4,41 +4,55 @@ import androidx.lifecycle.*
 import com.example.employees.model.Employee
 import com.example.employees.networking.ApiHelper
 import com.example.employees.networking.EmployeeRepository
-import com.example.employees.utils.Resource
+import com.example.employees.networking.EmployeeResponse
+import com.example.employees.utils.ApiResult
+import com.jakewharton.rxrelay2.BehaviorRelay
+import io.reactivex.Single
 import io.reactivex.android.schedulers.AndroidSchedulers
 import io.reactivex.disposables.CompositeDisposable
+import io.reactivex.rxkotlin.Observables
+import io.reactivex.rxkotlin.addTo
 import io.reactivex.schedulers.Schedulers
 
 internal class EmployeeListViewModel(private val repository: EmployeeRepository) : ViewModel() {
 
-    private val items = MutableLiveData<Resource<List<Employee>>>()
-    private val compositeDisposable = CompositeDisposable()
-
-    init {
-        fetchEmployees()
+    private val itemsLiveData = MutableLiveData<ApiResult<List<Employee>>>()
+    private val subscriptions = CompositeDisposable()
+    val listRelay = BehaviorRelay.create<ListType>().apply {
+        accept(ListType.EMPLOYEE)
     }
 
-    private fun fetchEmployees() {
-        items.postValue(Resource.loading(null))
-        compositeDisposable.add(
-            repository.getEmployees()
+    init {
+        fetchEmployees(listRelay.value ?: ListType.EMPLOYEE)
+    }
+
+    fun fetchEmployees(listType: ListType) {
+        itemsLiveData.postValue(ApiResult.loading(null))
+        var employeeResponse: Single<EmployeeResponse>? = when (listType) {
+            ListType.EMPLOYEE -> repository.getEmployees()
+            ListType.EMPTY -> repository.getEmptyEmployees()
+            ListType.MALFORMED -> repository.getMalformedEmployees()
+        }
+        employeeResponse?.let {
+            it
                 .subscribeOn(Schedulers.io())
                 .observeOn(AndroidSchedulers.mainThread())
                 .subscribe({
-                    items.postValue(Resource.success(it.items))
+                    itemsLiveData.postValue(ApiResult.success(it.items))
                 }, {
-                    items.postValue(Resource.error("Something Went Wrong", null))
+                    itemsLiveData.postValue(ApiResult.error(it.message ?: "Something went wrong", null))
                 })
-        )
+                .addTo(subscriptions)
+        }
     }
 
     override fun onCleared() {
         super.onCleared()
-        compositeDisposable.dispose()
+        subscriptions.dispose()
     }
 
-    fun getEmployees(): LiveData<Resource<List<Employee>>> {
-        return items
+    fun getEmployees(): LiveData<ApiResult<List<Employee>>> {
+        return itemsLiveData
     }
 }
 

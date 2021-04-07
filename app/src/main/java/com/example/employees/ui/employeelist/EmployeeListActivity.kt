@@ -19,7 +19,7 @@ import com.example.employees.model.isValid
 import com.example.employees.networking.ApiHelper
 import com.example.employees.networking.EmployeeWebserviceImpl
 import com.example.employees.ui.toBindings
-import com.example.employees.utils.Status
+import com.example.employees.utils.RequestStatus
 
 class EmployeeListActivity : AppCompatActivity() {
 
@@ -42,12 +42,21 @@ class EmployeeListActivity : AppCompatActivity() {
         bindings.employeeList.layoutManager = LinearLayoutManager(this)
         adapter = EmployeeListAdapter(listener = listener)
         bindings.employeeList.adapter = adapter
+        bindings.employeeButton.setOnClickListener {
+            listener.onEmployeeFetchClick()
+        }
+        bindings.emptyButton.setOnClickListener {
+            listener.onEmptyFetchClick()
+        }
+        bindings.malformedButton.setOnClickListener {
+            listener.onMalformedFetchClick()
+        }
     }
 
     private fun setupObserver() {
         viewModel?.getEmployees()?.observe(this, {
-            when (it.status) {
-                Status.SUCCESS -> {
+            when (it.requestStatus) {
+                RequestStatus.SUCCESS -> {
                     bindings.progressBar.visibility = View.GONE
                     val items = it.data
                         ?.filter { employee ->
@@ -68,12 +77,12 @@ class EmployeeListActivity : AppCompatActivity() {
                     }
                     renderList(items)
                 }
-                Status.LOADING -> {
+                RequestStatus.LOADING -> {
                     bindings.emptyState.visibility = View.GONE
                     bindings.progressBar.visibility = View.VISIBLE
                     bindings.employeeList.visibility = View.GONE
                 }
-                Status.ERROR -> {
+                RequestStatus.ERROR -> {
                     bindings.emptyState.visibility = View.GONE
 
                     //Handle Error
@@ -101,14 +110,30 @@ class EmployeeListActivity : AppCompatActivity() {
     }
 
     private val listener = object : EmployeeListener {
-        override fun onItemClick(employeeId: String) {
+        override fun onItemClick(employeeId: String) {}
 
+        override fun onEmployeeFetchClick() {
+            viewModel?.listRelay?.accept(ListType.EMPLOYEE)
+            viewModel?.fetchEmployees(ListType.EMPLOYEE)
+        }
+
+        override fun onEmptyFetchClick() {
+            viewModel?.listRelay?.accept(ListType.EMPTY)
+            viewModel?.fetchEmployees(ListType.EMPTY)
+        }
+
+        override fun onMalformedFetchClick() {
+            viewModel?.listRelay?.accept(ListType.MALFORMED)
+            viewModel?.fetchEmployees(ListType.MALFORMED)
         }
     }
 }
 
 interface EmployeeListener {
     fun onItemClick(employeeId: String)
+    fun onEmployeeFetchClick()
+    fun onEmptyFetchClick()
+    fun onMalformedFetchClick()
 }
 
 private class EmployeeListAdapter(val listener: EmployeeListener) :

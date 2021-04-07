@@ -1,6 +1,6 @@
 package com.example.employees.utils
 
-enum class Status {
+enum class RequestStatus {
     SUCCESS,
     ERROR,
     LOADING
