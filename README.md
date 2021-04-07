@@ -1,5 +1,7 @@
 # Employees
 
+![device-2021-04-06-163302](https://user-images.githubusercontent.com/6844125/113801936-acd66480-970e-11eb-97ee-a88b7d939964.png)
+
 # Build Tools & Versions Used
 Android Studio 4.1.2
 minSdk is 21
